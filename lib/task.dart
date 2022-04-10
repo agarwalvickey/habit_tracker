@@ -66,10 +66,10 @@ Future<List<Map<dynamic, dynamic>>> getElements() async {
     return null;
   }
 
-// Future<int> deleteItem(int id) async {
-//   return await _databaseHelper.db
-//       .delete("travel", where: "serial_number = ?", whereArgs: [id]);
-// }
+Future<int> deleteItem(int id) async {
+  return await _databaseHelper.db
+      .delete('task', where: "id = ?", whereArgs: [id]);
+}
 
 // Future<int> deleteTravelbyTrip(int id) async {
 //   return await _databaseHelper.db.delete("travel", where: "tripid = ?", whereArgs: [id]);

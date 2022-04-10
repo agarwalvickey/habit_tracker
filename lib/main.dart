@@ -1,5 +1,6 @@
 import 'package:date_time_picker/date_time_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 // import 'package:flutter/rendering.dart';
 import 'package:remind/task_manager.dart';
 import 'package:remind/task.dart';
@@ -38,15 +39,44 @@ class _homeState extends State<home> {
       _tasks=getElements();
     });
   }
+  callBack2(int hour, int minute,String title,String details){
+
+    notificationScheduled(hour,minute,title,details);
+  }
+  FlutterLocalNotificationsPlugin flutterNotificationPlugin;
 
   Future<List<Map<dynamic, dynamic>>> _tasks;
   @override
   void initState() {
     // SchedulerBinding.instance.addPostFrameCallback((_) => setState(() {}));
     _tasks = getElements();
+    var initializationSettingsAndroid = new AndroidInitializationSettings('launch_background');
+
+    var initializationSettingsIOS = new IOSInitializationSettings();
+
+    var initializationSettings = new InitializationSettings(android: initializationSettingsAndroid, iOS: initializationSettingsIOS);
+
+    flutterNotificationPlugin = FlutterLocalNotificationsPlugin();
+
+    flutterNotificationPlugin.initialize(initializationSettings,onSelectNotification: onSelectNotification);
+
 
     super.initState();
   }
+  Future onSelectNotification(String payload) async{
+    showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text(
+              "Hello Everyone"
+          ),
+          content: Text(
+              "$payload"
+          ),
+        )
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +95,7 @@ class _homeState extends State<home> {
                   );
                 } else {
 
+
                   return ListView.builder(
                     itemCount: snapshot.data.length,
                     itemBuilder: (context, index) {
@@ -80,7 +111,10 @@ class _homeState extends State<home> {
                             // Text(s)
 
                             Icon(Icons.edit,color: Colors.grey,),
-                            Icon(Icons.delete,color: Colors.red,),
+                            IconButton(onPressed: (){
+                              deleteItem(snapshot.data[index]['id']);
+                              callBack();
+                            }, icon: const Icon(Icons.delete,color: Colors.red,)),
 
                           ],
                         ),
@@ -101,18 +135,48 @@ class _homeState extends State<home> {
           showDialog(
               context: context,
               builder: (context) {
-                return form(callBack);
+                return form(callBack,callBack2);
+
               });
         },
         label: Icon(Icons.add),
       ),
     );
   }
+  Future<void> notificationScheduled(int hour,int minute,String title,String detail) async {
+    // int hour = 13;
+    var ogValue = hour;
+    // int minute = 46;
+
+    var time = Time(hour,minute,0);
+
+    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      'repeatDailyAtTime channel id',
+      'repeatDailyAtTime channel name',
+      channelDescription: 'repeatDailyAtTime description',
+      importance: Importance.max,
+      // sound: 'slow_spring_board',
+      ledColor: Color(0xFF3EB16F),
+      ledOffMs: 1000,
+      ledOnMs: 1000,
+      enableLights: true,
+    );
+    var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+    var platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics, iOS: iOSPlatformChannelSpecifics);
+
+    await flutterNotificationPlugin.showDailyAtTime(4,title,
+      detail,time, platformChannelSpecifics,payload: "Hello",);
+
+    print('Set at '+time.minute.toString()+" +"+time.hour.toString());
+
+  }
 }
 
 class form extends StatefulWidget {
-  form(this.callback);
+  form(this.callback,this.callback2);
   Function callback;
+  Function callback2;
   // const form({Key? key}) : super(key: key);
   @override
   State<form> createState() => _formState();
@@ -166,6 +230,14 @@ class _formState extends State<form> {
                   String reminderDate = DateFormat('EEE d MMM \n kk:mm').format(departureDate);
                   inserttasks(details.text, title.text, reminderDate,
                      formattedDate );
+                  List<String> temp=reminderDate.split("\n");
+                  String temp2=temp[1];
+                  List<String> temp3=temp2.split(":");
+                  int hour=int.parse(temp3[0]);
+                  int minute=int.parse(temp3[1]);
+                  print(hour);
+                  print(minute);
+                  widget.callback2(hour,minute,title.text,details.text);
                   widget.callback();
                   Navigator.pop(context);
                 },
@@ -178,6 +250,7 @@ class _formState extends State<form> {
     );
   }
 }
+
 
 // class task extends StatefulWidget {
 //   const task({Key? key}) : super(key: key);
